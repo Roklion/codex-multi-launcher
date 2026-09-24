@@ -1,7 +1,27 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 
+const pendingPackageLaunches = new Map<string, Promise<void>>();
+
 export async function launchWindowsPackagedApp(options: {
+  packageFullName: string;
+  appUserModelId: string;
+  arguments: string;
+  environment: Record<string, string>;
+}): Promise<{ pid: number }> {
+  const previous = pendingPackageLaunches.get(options.packageFullName) ?? Promise.resolve();
+  const launch = previous.then(() => runWindowsPackagedApp(options));
+  const settled = launch.then(() => {}, () => {});
+  pendingPackageLaunches.set(options.packageFullName, settled);
+  void settled.then(() => {
+    if (pendingPackageLaunches.get(options.packageFullName) === settled) {
+      pendingPackageLaunches.delete(options.packageFullName);
+    }
+  });
+  return launch;
+}
+
+function runWindowsPackagedApp(options: {
   packageFullName: string;
   appUserModelId: string;
   arguments: string;

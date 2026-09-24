@@ -81,6 +81,7 @@ if ($ResumeThread) {
 
 try {
   Add-Type -TypeDefinition $source -Language CSharp
+  [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
   $payload = [Console]::In.ReadToEnd() | ConvertFrom-Json
   $environment = @($payload.environment.PSObject.Properties | ForEach-Object { "$($_.Name)=$($_.Value)" })
   $launchedPid = [CodexProfileManager.Windows.PackagedLauncher]::Launch(
